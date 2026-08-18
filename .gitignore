@@ -1,0 +1,14 @@
+# Virtual environments
+.venv_cadquery/
+.venv_cqeditor/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# IDE / editor files
+.vscode/
+.idea/
+
+# CQ-editor / Qt generated files
+*.log
