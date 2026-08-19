@@ -4,21 +4,7 @@ CadQuery/Solidgold take-home assignment.
 
 ## Environment setup
 
-Two separate virtual environments are used:
-
-- `.venv_cadquery` — CadQuery development
-- `.venv_cqeditor` — CQ-editor and its GUI dependencies
-
-### CadQuery environment
-
-```bash
-python3.10 -m venv .venv_cadquery
-source .venv_cadquery/bin/activate
-python -m pip install -r requirements-cadquery.txt
-deactivate
-```
-
-### CQ-editor environment
+### CQ-editor environment (includes CADquery)
 
 ```bash
 python3.10 -m venv .venv_cqeditor
@@ -34,6 +20,8 @@ source .venv_cqeditor/bin/activate
 cq-editor
 ```
 
+### WSL specific
+
 If CQ-editor fails to start due to missing Qt/XCB libraries, install the required system dependencies:
 
 ```bash
@@ -47,3 +35,9 @@ sudo apt install \
     libxcb-xkb1 \
     libxkbcommon-x11-0
 ```
+
+If CQ-editor displays a black rendering window due to OpenGL/WSLg graphics acceleration. In that case, start it using software rendering and the XCB backend:
+
+```bash
+source .venv_cqeditor/bin/activate
+LIBGL_ALWAYS_SOFTWARE=1 cq-editor --platform xcb
