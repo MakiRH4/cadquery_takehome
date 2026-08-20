@@ -3,22 +3,22 @@ import cadquery as cq
 w = 140
 h = 69
 t = 10
-case_fillet_r = 10
+solid_fillet_r = 10
 hole_diameter = 7
 
 #base generation
 
-case = (
+solid = (
     cq.Workplane("XY", [0,0,0])
     .box(h, w, t)
     .faces("+Z")
     .shell(-2)
     .edges("|Z")
-    .fillet(case_fillet_r)
-    .faces("<Z")
-    .fillet(0.35)
+    .fillet(solid_fillet_r)
     .workplane(origin=(-13, 59.5, 0))
     .hole(hole_diameter)
+    .faces("<Z")
+    .fillet(0.35)
 )
 
 #bool cuts in Z axis
@@ -50,10 +50,10 @@ bool_cut_Y3 = (
     cq.Workplane(origin=(-22, 70, 0.775))
     .cylinder(10, 3.5, (0, 1, 0))
 )
-case = case.cut(bool_cut_Z1)
-case = case.cut(bool_cut_Z2)
-case = case.cut(bool_cut_Y1)
-case = case.cut(bool_cut_Y2)
-case = case.cut(bool_cut_Y3)
+solid = solid.cut(bool_cut_Z1)
+solid = solid.cut(bool_cut_Z2)
+solid = solid.cut(bool_cut_Y1)
+solid = solid.cut(bool_cut_Y2)
+solid = solid.cut(bool_cut_Y3)
 
-show_object(case)
+show_object(solid)
