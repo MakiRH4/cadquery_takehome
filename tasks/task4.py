@@ -124,11 +124,32 @@ for x in xs:
     for y in ys:
         solid = solid.union(star_ring.translate((x, y, 0)))
 '''
+structure = (
+    cq.Workplane("XY")
+    .box(total_length, total_width, height)
+    .faces("-Z")
+    .shell(-2)   
+)
+
+structure_cut = (
+    cq.Workplane("XY")
+    .rarray(pitch, pitch, cols, rows, True)
+    .cylinder(50, cavity_diam/2, (0,0,1)
+
+)
+
+show_object(structure_cut)
+#structure = (structure.cut(solid)
+
+show_object(structure)
+
 tray = (
     cq.Workplane("XY", origin=(0, 0, floor_z))
     .rect(total_length + 15, total_width + 15)
     .rect(total_length - 2 * rim_w, total_width - 2 * rim_w)
     .extrude(-2.5)
+    .edges("|Z")
+    .fillet(5)
 )
 
 show_object(tray)
