@@ -1,17 +1,9 @@
 import cadquery as cq
 import math
 
-#####
-# Inputs
-#####
 cols = 6          # number of cavities wide  (X)
 rows = 4          # number of cavities long  (Y)
 
-#
-# Anchor dimension: the cavity "cylinder" (like bumpDiam in the Lego brick).
-# Everything below is derived from it, so changing this one number rescales
-# the whole tray while keeping every proportion.
-#
 cavity_diam = 40.0
 
 #
@@ -21,7 +13,7 @@ clearance          = 0.1
 wall_scale         = 0.18     # material between neighbouring cavities
 depth_scale        = 0.35     # how deep each pocket is
 floor_scale        = 0.12     # solid floor left under each pocket
-border_scale       = 0.28     # margin from outer cavity edge to tray edge
+border_scale       = 0.25     # margin from outer cavity edge to tray edge
 rim_w_scale        = 0.14     # width of the raised perimeter rim
 rim_h_scale        = 0.06     # how tall the rim stands above the field
 corner_fillet_scale= 0.10     # vertical corner rounding
@@ -38,13 +30,11 @@ notches_per_side   = 2
 #
 wall   = cavity_diam * wall_scale
 pitch  = cavity_diam + wall                       # centre-to-centre spacing
-depth  = cavity_diam * depth_scale
-floor  = cavity_diam * floor_scale
+depth  = 10#cavity_diam * depth_scale
+floor  = 2#cavity_diam * floor_scale
 border = cavity_diam * border_scale
 rim_w  = cavity_diam * rim_w_scale
 rim_h  = cavity_diam * rim_h_scale
-c_fil  = cavity_diam * corner_fillet_scale
-b_fil  = cavity_diam * base_fillet_scale
 star_r = cavity_diam * star_r_scale
 star_h = cavity_diam * star_h_scale
 notch_w= cavity_diam * notch_w_scale
@@ -74,9 +64,9 @@ solid = (
     cq.Workplane("XY")
     .box(total_length, total_width, height)
     .edges("|Z")
-    .fillet(c_fil)
+    .fillet(5)
     .faces("<Z")
-    .fillet(b_fil)
+    .fillet(2.5)
 )
 
 # ---- cut the grid of cylindrical pockets from the top ----
@@ -103,26 +93,13 @@ for x in xs:
     for y in ys:
         solid = solid.union(star_ring.translate((x, y, 0)))
 
-# ---- raised rim around the perimeter ----
-rim = (
-    cq.Workplane("XY", origin=(0, 0, top_z))
-    .rect(total_length, total_width)
+baseplate = (
+    cq.Workplane("XY", origin=(0, 0, floor_z))
+    .rect(total_length + 15, total_width + 15)
     .rect(total_length - 2 * rim_w, total_width - 2 * rim_w)
-    .extrude(rim_h)
+    .extrude(-2.5)
 )
-solid = solid.union(rim)
 
-# ---- alignment notches cut into the rim on the two short edges ----
-if notches_per_side > 0:
-    notch_span = (rows - 1) * pitch
-    ys_notch = [(-0.5 + i / (notches_per_side - 1)) * notch_span
-                for i in range(notches_per_side)] if notches_per_side > 1 else [0.0]
-    notch_cutters = (
-        cq.Workplane("XY", origin=(0, 0, top_z + rim_h / 2.0))
-        .pushPoints([(total_length / 2.0, y) for y in ys_notch] +
-                    [(-total_length / 2.0, y) for y in ys_notch])
-        .box(rim_w * 3, notch_w, rim_h * 1.2, combine=False)
-    )
-    solid = solid.cut(notch_cutters)
+solid = solid.union(baseplate)
 
 show_object(solid)
