@@ -30,7 +30,7 @@ front_block = (
 )
 
 bottom = blocks.union(front_block)
-bb_bot = bottom.val().BoundingBox().
+bb_bot = bottom.val().BoundingBox()
 
 base_block_width_scale = 1.1
 base_block = (
