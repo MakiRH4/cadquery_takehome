@@ -72,7 +72,7 @@ solid = (
 
 form = (
     cq.Workplane("XY")
-    .cylinder(depth, cavity_diam/2, (0,0,1))
+    .cylinder(depth+2, cavity_diam/2, (0,0,1))
     .faces("+Z")
     .shell(-2)
 )
@@ -108,7 +108,8 @@ pocket_cutters = (
     .extrude(-depth)
 )
 solid = solid.cut(pocket_cutters)
-
+'''
+'''
 # ---- raised outlined star on every pocket floor ----
 # one star "ring" = outer star with a smaller star removed from its middle
 star_ring = (
@@ -127,19 +128,21 @@ for x in xs:
 structure = (
     cq.Workplane("XY")
     .box(total_length, total_width, height)
+    .edges("|Z")
+    .fillet(10)
     .faces("-Z")
-    .shell(-2)   
+    .shell(-2)
+ 
 )
 
 structure_cut = (
     cq.Workplane("XY")
     .rarray(pitch, pitch, cols, rows, True)
-    .cylinder(50, cavity_diam/2, (0,0,1)
-
+    .cylinder(50, cavity_diam/2, (0,0,1))
 )
 
-show_object(structure_cut)
-#structure = (structure.cut(solid)
+#show_object(structure_cut)
+structure = (structure.cut(structure_cut))
 
 show_object(structure)
 
