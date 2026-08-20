@@ -1,71 +1,128 @@
+import cadquery as cq
+import math
+
 #####
 # Inputs
-######
-lbumps = 4  # number of bumps long
-wbumps = 6  # number of bumps wide
-thin = True  # True for thin, False for thick
+#####
+cols = 6          # number of cavities wide  (X)
+rows = 4          # number of cavities long  (Y)
 
 #
-# Lego Brick Constants-- these make a Lego brick a Lego :)
+# Anchor dimension: the cavity "cylinder" (like bumpDiam in the Lego brick).
+# Everything below is derived from it, so changing this one number rescales
+# the whole tray while keeping every proportion.
 #
-pitch = 8
-clearance = 0.1
-bumpDiam = 4.8
-bumpHeight = 1.8
-if thin:
-    height = 3.2
-else:
-    height = 9.6
+cavity_diam = 40.0
 
-t = (pitch - (2 * clearance) - bumpDiam) / 2.0
-postDiam = pitch - t  # works out to 6.5
-total_length = lbumps * pitch - 2.0 * clearance
-total_width = wbumps * pitch - 2.0 * clearance
+#
+# Proportions -- all expressed as a fraction of the anchor, Lego-style
+#
+clearance          = 0.1
+wall_scale         = 0.18     # material between neighbouring cavities
+depth_scale        = 0.35     # how deep each pocket is
+floor_scale        = 0.12     # solid floor left under each pocket
+border_scale       = 0.28     # margin from outer cavity edge to tray edge
+rim_w_scale        = 0.14     # width of the raised perimeter rim
+rim_h_scale        = 0.06     # how tall the rim stands above the field
+corner_fillet_scale= 0.10     # vertical corner rounding
+base_fillet_scale  = 0.03     # bottom-edge rounding
+star_r_scale       = 0.30     # outer radius of the star
+star_h_scale       = 0.045    # how far the star stands off the pocket floor
+star_inner_ratio   = 0.42     # inner/outer radius -> star sharpness
+star_outline_scale = 0.82     # inner star as fraction of outer -> outline thickness
+notch_w_scale      = 0.22     # width of the alignment notches in the rim
+notches_per_side   = 2
 
-# make the base
+#
+# Derived (dynamic) dimensions
+#
+wall   = cavity_diam * wall_scale
+pitch  = cavity_diam + wall                       # centre-to-centre spacing
+depth  = cavity_diam * depth_scale
+floor  = cavity_diam * floor_scale
+border = cavity_diam * border_scale
+rim_w  = cavity_diam * rim_w_scale
+rim_h  = cavity_diam * rim_h_scale
+c_fil  = cavity_diam * corner_fillet_scale
+b_fil  = cavity_diam * base_fillet_scale
+star_r = cavity_diam * star_r_scale
+star_h = cavity_diam * star_h_scale
+notch_w= cavity_diam * notch_w_scale
+
+height = floor + depth                             # base thickness
+total_length = (cols - 1) * pitch + cavity_diam + 2 * border - 2 * clearance
+total_width  = (rows - 1) * pitch + cavity_diam + 2 * border - 2 * clearance
+
+top_z   = height / 2.0                              # field level (top of base box)
+floor_z = top_z - depth                             # pocket-floor level
+
+
+#
+# Helper: points of an n-pointed star (outer radius r, pointing +Y)
+#
+def star_points(r, ratio=star_inner_ratio, n=5, rot=math.pi / 2.0):
+    pts = []
+    for i in range(2 * n):
+        ang = rot + i * math.pi / n
+        rad = r if i % 2 == 0 else r * ratio
+        pts.append((rad * math.cos(ang), rad * math.sin(ang)))
+    return pts
+
+
+# ---- base block, rounded like the Lego brick ----
 solid = (
     cq.Workplane("XY")
     .box(total_length, total_width, height)
     .edges("|Z")
-    .fillet(1)
+    .fillet(c_fil)
     .faces("<Z")
-    .fillet(0.35)
+    .fillet(b_fil)
 )
-# shell inwards not outwards
-solid = solid.faces("<Z").shell(-1.0 * t)
 
-# make the bumps on the top
-solid = (
-    solid.faces(">Z")
-    .workplane()
-    .rarray(pitch, pitch, lbumps, wbumps, True)
-    .circle(bumpDiam / 2.0)
-    .extrude(bumpHeight)
+# ---- cut the grid of cylindrical pockets from the top ----
+pocket_cutters = (
+    cq.Workplane("XY", origin=(0, 0, top_z))
+    .rarray(pitch, pitch, cols, rows, True)
+    .circle(cavity_diam / 2.0)
+    .extrude(-depth)
 )
-'''
-# add posts on the bottom. posts are different diameter depending on geometry
-# solid studs for 1 bump, tubes for multiple, none for 1x1
-tmp = solid.faces("<Z").workplane(invert=True)
+solid = solid.cut(pocket_cutters)
 
-if lbumps > 1 and wbumps > 1:
-    tmp = (
-        tmp.rarray(pitch, pitch, lbumps - 1, wbumps - 1, center=True)
-        .circle(postDiam / 2.0)
-        .circle(bumpDiam / 2.0)
-        .extrude(height - t)
+# ---- raised outlined star on every pocket floor ----
+# one star "ring" = outer star with a smaller star removed from its middle
+star_ring = (
+    cq.Workplane("XY", origin=(0, 0, floor_z))
+    .polyline(star_points(star_r)).close()
+    .polyline(star_points(star_r * star_outline_scale)).close()
+    .extrude(star_h)
+)
+# stamp it at every cavity centre of the grid, then fuse
+xs = [(i - (cols - 1) / 2.0) * pitch for i in range(cols)]
+ys = [(j - (rows - 1) / 2.0) * pitch for j in range(rows)]
+for x in xs:
+    for y in ys:
+        solid = solid.union(star_ring.translate((x, y, 0)))
+
+# ---- raised rim around the perimeter ----
+rim = (
+    cq.Workplane("XY", origin=(0, 0, top_z))
+    .rect(total_length, total_width)
+    .rect(total_length - 2 * rim_w, total_width - 2 * rim_w)
+    .extrude(rim_h)
+)
+solid = solid.union(rim)
+
+# ---- alignment notches cut into the rim on the two short edges ----
+if notches_per_side > 0:
+    notch_span = (rows - 1) * pitch
+    ys_notch = [(-0.5 + i / (notches_per_side - 1)) * notch_span
+                for i in range(notches_per_side)] if notches_per_side > 1 else [0.0]
+    notch_cutters = (
+        cq.Workplane("XY", origin=(0, 0, top_z + rim_h / 2.0))
+        .pushPoints([(total_length / 2.0, y) for y in ys_notch] +
+                    [(-total_length / 2.0, y) for y in ys_notch])
+        .box(rim_w * 3, notch_w, rim_h * 1.2, combine=False)
     )
-elif lbumps > 1:
-    tmp = (
-        tmp.rarray(pitch, pitch, lbumps - 1, 1, center=True)
-        .circle(t)
-        .extrude(height - t)
-    )
-elif wbumps > 1:
-    tmp = (
-        tmp.rarray(pitch, pitch, 1, wbumps - 1, center=True)
-        .circle(t)
-        .extrude(height - t)
-    )
-else:
-    tmp = solid
-'''
+    solid = solid.cut(notch_cutters)
+
+show_object(solid)
