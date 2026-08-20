@@ -34,25 +34,14 @@ solid = (
     .extrude(top_height)
     .faces(">Z")
     .fillet(top_fillet_r)
-    .faces("<Z")
-#    .chamfer(bottom_chamfer_r)
 )
 
 cutter = (
     cq.Workplane("XY", origin=(0, 0, cutter_origin_z))
     .polygon(cutter_sides, cutter_radius)
     .extrude(cutter_extrude)
-#    .edges("|Z or <Z")
-#    .fillet(cutter_fillet_r)
 )
 
-solid = solid.cut(cutter)
-
-solid = (
-    solid
-    .faces(">Z")
-    .edges("%LINE")
-    .fillet(cutter_fillet_r)
-)
+solid = solid.cut(cutter).faces(">Z").fillet(cutter_fillet_r)
 
 show_object(solid)
