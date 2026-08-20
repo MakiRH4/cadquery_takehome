@@ -13,7 +13,7 @@ blocks_rows = 4
 blocks = (
     cq.Workplane()
     .rarray(1, y_spacing, 3, blocks_rows)
-    .rect(l, w, h)
+    .rect(l, w, True)
     .extrude(h)
 )
 
@@ -103,7 +103,7 @@ joiner_top = (
     cq.Workplane("XY")
     .rect(h, w)
     .extrude((bb_vert.zmax - bb_vert.zmin) * joiner_top_extrude_z_scale - h * joiner_top_extrude_h_scale)
-    .translate((l * joiner_top_translate_x_scale - h * joiner_top_translate_x_h_scale, bb_vert.ymax + w * joiner_top_translate_y_scale, -h * joiner_top_translate_z_scale), double)
+    .translate((l * joiner_top_translate_x_scale - h * joiner_top_translate_x_h_scale, bb_vert.ymax + w * joiner_top_translate_y_scale, -h * joiner_top_translate_z_scale))
 )
 
 joiner_top2 = joiner_top.mirror("YZ")
@@ -240,7 +240,7 @@ mid = (
     cq.Workplane("XZ")
     .rect(l * mid_width_scale, h * mid_height_scale)
     .extrude(-w)
-    .translate(0, 0, -h * mid_translate_z_scale)
+    .translate((0, 0, -h * mid_translate_z_scale))
 )
 
 mid_cutter_p0_x_scale = 0.55
@@ -262,7 +262,7 @@ mid_cutter = (
 )
 
 mid_final = mid_cutter.intersect(mid)
-mid_final2 = mid_final.mirror("XZY")
+mid_final2 = mid_final.mirror("ZY")
 
 mid_final_translate_y_scale = 0.5
 mid_final = mid_final.union(mid_final2).translate((0, -w * mid_final_translate_y_scale, 0))
