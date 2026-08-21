@@ -117,4 +117,4 @@ stars = (
 
 solid = solid.union(stars)
 
-cq.exporters.export(solid, "task4.stl")
+cq.exporters.export(solid, "task2.stl")
