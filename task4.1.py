@@ -67,8 +67,7 @@ tray = (
 tray_cut = (
     cq.Workplane("XY", origin=(0,0,-5))
     .box(total_length - 0.5, total_width - 0.5, height -5)
-    .edges("|Z")
-    .fillet(structure_fillet)
+    .edges("|Z").fillet(structure_fillet)
 )
 
 tray = tray.cut(tray_cut)
@@ -89,6 +88,8 @@ form = (
     cq.Workplane("XY")
     .cylinder(height, cavity_diam / 2.0, (0, 0, 1))
     .faces("+Z").shell(-floor)
+    .faces("<Z").edges().fillet(0.35)
+    .faces("+Z").faces("<Z").edges().fillet(0.35)
 )
 
 forms = (
@@ -117,4 +118,4 @@ stars = (
 
 solid = solid.union(stars)
 
-cq.exporters.export(solid, "task4.stl")
+show_object(solid)
